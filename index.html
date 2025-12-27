@@ -1,68 +1,134 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MOUSE AI | IPTV + Chat</title>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOUSE AI | IPTV Chat</title>
 
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
+<script type="module" src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js"></script>
+
+<style>
+:root { --primary:#00d2ff;--accent:#22c55e;--bg:#05080a;--panel:#0f172a;--card:#1e293b;--border:#334155;--text:#ffffff; }
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Cairo',sans-serif;}
+body{background:var(--bg);color:var(--text);overflow:hidden;height:100vh;display:flex;flex-direction:column;}
+header{height:60px;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:0 20px;border-bottom:2px solid var(--primary);}
+header .logo{font-size:1.5rem;font-weight:bold;color:var(--primary);}
+header #connection-status i{color:var(--accent);margin-left:5px;}
+.main-content{flex:1;display:flex;overflow:hidden;}
+.player-area{flex:3;display:flex;flex-direction:column;background:#000;}
+.video-wrapper{flex:1;display:flex;align-items:center;justify-content:center;background:#000;}
+video{width:100%;max-height:100%;box-shadow:0 0 50px rgba(0,0,0,0.5);}
+.sidebar{flex:1;min-width:380px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;}
+.sidebar-header{padding:20px;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border);}
+.quick-links{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:15px;}
+.btn-quick{background:var(--card);border:1px solid var(--primary);color:var(--primary);padding:8px;border-radius:8px;cursor:pointer;font-weight:bold;transition:0.3s;}
+.btn-quick:hover{background:var(--primary);color:#000;}
+.channels-list{flex:1;overflow-y:auto;padding:10px;}
+.channel-item{display:flex;align-items:center;gap:12px;padding:10px;background:var(--card);margin-bottom:8px;border-radius:8px;cursor:pointer;transition:0.2s;}
+.channel-item:hover{border-color:var(--primary);background:#2d3a4f;}
+.channel-item img{width:40px;height:40px;border-radius:5px;background:#fff;object-fit:contain;}
+.channel-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:bold;font-size:0.95rem;}
+.chat-container{height:300px;background:var(--panel);display:flex;flex-direction:column;border-top:1px solid var(--border);}
+.chat-messages{flex:1;overflow-y:auto;padding:10px;}
+.chat-messages .message{margin-bottom:8px;}
+.chat-messages .message span{font-weight:bold;margin-left:5px;}
+.chat-input{display:flex;border-top:1px solid var(--border);}
+.chat-input input{flex:1;padding:10px;border:none;background:var(--card);color:white;outline:none;}
+.chat-input button{padding:10px;background:var(--primary);border:none;color:#000;cursor:pointer;transition:0.2s;}
+.chat-input button:hover{background:var(--accent);}
+footer{text-align:center;padding:10px;background:var(--panel);border-top:2px solid var(--primary);font-size:0.8rem;color:var(--text);}
+@media(max-width:1024px){.main-content{flex-direction:column;}.sidebar{width:100%;min-width:unset;height:auto;}.video-wrapper{position:sticky;top:0;z-index:100;}}
+</style>
 </head>
 <body>
 
-    <header>
-        <div class="logo"><i class="fas fa-desktop"></i> MOUSE AI</div>
-        <div id="connection-status"><i class="fas fa-signal"></i> مباشر</div>
-    </header>
+<header>
+<div class="logo"><i class="fas fa-desktop"></i> MOUSE AI</div>
+<div id="connection-status"><i class="fas fa-signal"></i> مباشر</div>
+</header>
 
-    <div class="main-content">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <p>روابطك السريعة:</p>
-                <div class="quick-links">
-                    <button onclick="playLink(1)">1</button>
-                    <button onclick="playLink(2)">2</button>
-                    <button onclick="playLink(3)">3</button>
-                    <button onclick="playLink(4)">4</button>
-                </div>
+<div class="main-content">
+<aside class="sidebar">
+<div class="sidebar-header">
+<p style="margin-bottom:10px;color:var(--primary)">روابط سريعة:</p>
+<div class="quick-links">
+<button class="btn-quick" onclick="playLink(1)">1</button>
+<button class="btn-quick" onclick="playLink(2)">2</button>
+<button class="btn-quick" onclick="playLink(3)">3</button>
+<button class="btn-quick" onclick="playLink(4)">4</button>
+</div>
 
-                <select id="sourceSelector" onchange="fetchM3U(this.value)">
-                    <option value="">-- اختر قائمة --</option>
-                    <optgroup label="القوائم العربية">
-                        <option value="https://iptv-org.github.io/iptv/languages/ara.m3u">🌍 جميع القنوات العربية</option>
-                        <option value="https://iptv-org.github.io/iptv/categories/sports.m3u">⚽ الرياضية</option>
-                    </optgroup>
-                </select>
+<select id="sourceSelector" onchange="fetchM3U(this.value)">
+<option value="">-- اختر قائمة --</option>
+<option value="https://iptv-org.github.io/iptv/languages/ara.m3u">🌍 جميع القنوات العربية</option>
+<option value="https://iptv-org.github.io/iptv/categories/sports.m3u">⚽ القنوات الرياضية</option>
+</select>
 
-                <input type="text" id="searchBar" placeholder="🔍 ابحث عن قناة..." oninput="filterChannels()">
-            </div>
+<input type="text" id="searchBar" placeholder="🔍 ابحث عن قناة..." oninput="filterChannels()">
+</div>
 
-            <div id="loader">🔄 جاري تحميل القنوات...</div>
-            <div class="channels-list" id="channelsList"></div>
-        </aside>
+<div class="channels-list" id="channelsList"></div>
+</aside>
 
-        <main class="player-area">
-            <div class="video-wrapper">
-                <video id="videoPlayer" controls playsinline poster="https://i.imgur.com/8DAriPs.png"></video>
-            </div>
-            <div class="player-info">
-                <h3 id="playingTitle">جاهز للبث...</h3>
-                <p id="playingUrl"></p>
-            </div>
+<main class="player-area">
+<div class="video-wrapper">
+<video id="videoPlayer" controls playsinline poster="https://i.imgur.com/8DAriPs.png"></video>
+</div>
+<div style="padding:10px;background:var(--panel);">
+<h3 id="playingTitle" style="color:var(--primary)">جاهز للبث...</h3>
+<p id="playingUrl" style="font-size:0.7rem;opacity:0.5;margin-top:5px;"></p>
+</div>
 
-            <div class="chat">
-                <div class="chat-messages" id="chatMessages"></div>
-                <input type="text" id="chatInput" placeholder="اكتب رسالة..." onkeypress="sendOnEnter(event)">
-            </div>
-        </main>
-    </div>
+<div class="chat-container">
+<div class="chat-messages" id="chatMessages"></div>
+<div class="chat-input">
+<input type="text" id="chatInput" placeholder="أدخل اسمك ورسالتك..." />
+<button onclick="sendMessage()">💬 إرسال</button>
+</div>
+</div>
+</main>
+</div>
 
-    <script src="script.js"></script>
+<footer>© 2025 MOUSE AI | جميع الحقوق محفوظة</footer>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB9E6iM0GT9TrX8ZgRn6b-9YRP8P01073M",
+  authDomain: "mouse-ai-chat.firebaseapp.com",
+  projectId: "mouse-ai-chat",
+  storageBucket: "mouse-ai-chat.firebasestorage.app",
+  messagingSenderId: "1000892990056",
+  appId: "1:1000892990056:web:498ec6113ffca4519a71dd",
+  measurementId: "G-FXK3H69KPD"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const video = document.getElementById('videoPlayer');
+const hls = new Hls();
+let allChannels = [];
+const myLinks = {1:"http://185.226.172.11:8080/mo3ad/mo3ad1.m3u8",2:"http://185.226.172.11:8080/mo3ad/mo3ad2.m3u8",3:"http://185.226.172.11:8080/mo3ad/mo3ad3.m3u8",4:"http://185.226.172.11:8080/mo3ad/mo3ad4.m3u8"};
+
+function playLink(id){startStream(myLinks[id],"بث مباشر مخصص - قناة "+id);}
+async function fetchM3U(url){if(!url)return;const listContainer=document.getElementById('channelsList');listContainer.innerHTML='';try{const resp=await fetch(url);const data=await resp.text();parseM3U(data);}catch(e){alert("خطأ في جلب القنوات بسبب CORS");}}
+function parseM3U(content){const lines=content.split('\n');allChannels=[];let currentChannel={};lines.forEach(line=>{line=line.trim();if(line.startsWith('#EXTINF:')){const name=line.split(',')[1];const logoMatch=line.match(/tvg-logo="([^"]+)"/);currentChannel={name:name||"قناة غير معروفة",logo:logoMatch?logoMatch[1]:'https://via.placeholder.com/50?text=TV'};}else if(line.startsWith('http')){currentChannel.url=line;allChannels.push(currentChannel);currentChannel={};}});displayChannels(allChannels);}
+function displayChannels(channels){const listContainer=document.getElementById('channelsList');listContainer.innerHTML=channels.map(ch=>`<div class="channel-item" onclick="startStream('${ch.url}','${ch.name}')"><img src="${ch.logo}" onerror="this.src='https://via.placeholder.com/50?text=TV'"><div class="channel-name">${ch.name}</div></div>`).join('');}
+function filterChannels(){const query=document.getElementById('searchBar').value.toLowerCase();displayChannels(allChannels.filter(ch=>ch.name.toLowerCase().includes(query)));}
+function startStream(url,title){document.getElementById('playingTitle').innerText=title;document.getElementById('playingUrl').innerText=url;if(Hls.isSupported()){hls.stopLoad();hls.loadSource(url);hls.attachMedia(video);hls.on(Hls.Events.MANIFEST_PARSED,()=>video.play().catch(e=>console.log("Auto-play blocked")));}else if(video.canPlayType('application/vnd.apple.mpegurl')){video.src=url;video.play();}if(window.innerWidth<1024)window.scrollTo({top:0,behavior:'smooth'});}
+
+// ==== دردشة Firebase ====
+const chatMessages = document.getElementById('chatMessages');
+const chatInput = document.getElementById('chatInput');
+onChildAdded(ref(db,'chat'),snap=>{const data=snap.val();const msgDiv=document.createElement('div');msgDiv.classList.add('message');msgDiv.innerHTML=`<span>${data.name}:</span> ${data.text}`;chatMessages.appendChild(msgDiv);chatMessages.scrollTop=chatMessages.scrollHeight;});
+function sendMessage(){const text=chatInput.value.trim();if(!text)return;const name=prompt("ادخل اسم مستعار:","مستخدم");push(ref(db,'chat'),{name,text});chatInput.value='';}
+</script>
+
 </body>
 </html>
