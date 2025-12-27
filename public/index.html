@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOUSE AI | IPTV + Chat</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <div class="logo"><i class="fas fa-desktop"></i> MOUSE AI</div>
+        <div id="status">جاهز للبث</div>
+    </header>
+
+    <div class="main-content">
+        <!-- قائمة القنوات -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <p>روابطك السريعة:</p>
+                <div class="quick-links">
+                    <button onclick="playLink(1)">1</button>
+                    <button onclick="playLink(2)">2</button>
+                    <button onclick="playLink(3)">3</button>
+                    <button onclick="playLink(4)">4</button>
+                </div>
+                <select id="sourceSelector" onchange="fetchM3U(this.value)">
+                    <option value="">-- اختر قائمة --</option>
+                    <optgroup label="القوائم العربية">
+                        <option value="https://iptv-org.github.io/iptv/languages/ara.m3u">🌍 العربية</option>
+                        <option value="https://iptv-org.github.io/iptv/categories/sports.m3u">⚽ رياضية</option>
+                    </optgroup>
+                </select>
+                <input type="text" placeholder="🔍 ابحث عن قناة..." id="searchBar" oninput="filterChannels()">
+            </div>
+            <div id="channelsList" class="channels-list"></div>
+        </aside>
+
+        <!-- شاشة البث -->
+        <main class="player-area">
+            <div class="video-wrapper">
+                <video id="videoPlayer" controls playsinline></video>
+            </div>
+            <div class="player-info">
+                <h3 id="playingTitle">جاهز للبث...</h3>
+                <p id="playingUrl"></p>
+            </div>
+
+            <!-- دردشة -->
+            <div class="chat-container">
+                <div class="chat-header">💬 الدردشة</div>
+                <div class="chat-messages" id="chatMessages"></div>
+                <input type="text" id="chatInput" placeholder="اكتب رسالتك..." onkeydown="sendMessage(event)">
+            </div>
+        </main>
+    </div>
+
+    <footer>© 2025 Mouse AI. جميع الحقوق محفوظة.</footer>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
