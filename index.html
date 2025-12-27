@@ -1,173 +1,68 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MOUSEDZ AI IPTV CHAT</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOUSE AI | IPTV + Chat</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-<style>
-body{
-    margin:0;
-    font-family:Arial;
-    background:#0a0e12;
-    color:#fff;
-}
-
-/* زر الدردشة */
-.chat-toggle{
-    position:fixed;
-    bottom:20px;
-    right:20px;
-    width:55px;
-    height:55px;
-    border-radius:50%;
-    background:#00d2ff;
-    border:none;
-    font-size:22px;
-    cursor:pointer;
-    z-index:1000;
-}
-
-/* صندوق الدردشة */
-.chat-box{
-    position:fixed;
-    bottom:90px;
-    right:20px;
-    width:300px;
-    height:420px;
-    background:#121a28;
-    border-radius:15px;
-    display:none;
-    flex-direction:column;
-    border:1px solid #00d2ff;
-}
-
-.chat-header{
-    padding:10px;
-    background:#1e293b;
-    font-weight:bold;
-    display:flex;
-    justify-content:space-between;
-}
-
-.chat-messages{
-    flex:1;
-    padding:10px;
-    overflow-y:auto;
-    font-size:14px;
-}
-
-.chat-message span{
-    color:#22c55e;
-    font-weight:bold;
-}
-
-.chat-input{
-    padding:8px;
-    display:flex;
-    flex-direction:column;
-    gap:5px;
-}
-
-.chat-input input{
-    padding:8px;
-    border-radius:8px;
-    border:none;
-    outline:none;
-}
-
-.chat-input button{
-    padding:8px;
-    border:none;
-    border-radius:8px;
-    background:#00d2ff;
-    cursor:pointer;
-}
-</style>
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
-
 <body>
 
-<h2 style="text-align:center;margin-top:20px;">
-🐭 MOUSEDZ AI IPTV CHAT
-</h2>
+    <header>
+        <div class="logo"><i class="fas fa-desktop"></i> MOUSE AI</div>
+        <div id="connection-status"><i class="fas fa-signal"></i> مباشر</div>
+    </header>
 
-<video id="video" controls style="width:100%;max-height:70vh;"></video>
+    <div class="main-content">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <p>روابطك السريعة:</p>
+                <div class="quick-links">
+                    <button onclick="playLink(1)">1</button>
+                    <button onclick="playLink(2)">2</button>
+                    <button onclick="playLink(3)">3</button>
+                    <button onclick="playLink(4)">4</button>
+                </div>
 
-<!-- زر الدردشة -->
-<button class="chat-toggle" onclick="toggleChat()">💬</button>
+                <select id="sourceSelector" onchange="fetchM3U(this.value)">
+                    <option value="">-- اختر قائمة --</option>
+                    <optgroup label="القوائم العربية">
+                        <option value="https://iptv-org.github.io/iptv/languages/ara.m3u">🌍 جميع القنوات العربية</option>
+                        <option value="https://iptv-org.github.io/iptv/categories/sports.m3u">⚽ الرياضية</option>
+                    </optgroup>
+                </select>
 
-<!-- الدردشة -->
-<div class="chat-box" id="chatBox">
-    <div class="chat-header">
-        💬 دردشة
-        <span onclick="toggleChat()">✖</span>
+                <input type="text" id="searchBar" placeholder="🔍 ابحث عن قناة..." oninput="filterChannels()">
+            </div>
+
+            <div id="loader">🔄 جاري تحميل القنوات...</div>
+            <div class="channels-list" id="channelsList"></div>
+        </aside>
+
+        <main class="player-area">
+            <div class="video-wrapper">
+                <video id="videoPlayer" controls playsinline poster="https://i.imgur.com/8DAriPs.png"></video>
+            </div>
+            <div class="player-info">
+                <h3 id="playingTitle">جاهز للبث...</h3>
+                <p id="playingUrl"></p>
+            </div>
+
+            <div class="chat">
+                <div class="chat-messages" id="chatMessages"></div>
+                <input type="text" id="chatInput" placeholder="اكتب رسالة..." onkeypress="sendOnEnter(event)">
+            </div>
+        </main>
     </div>
 
-    <div class="chat-messages" id="chatMessages"></div>
-
-    <div class="chat-input">
-        <input id="nickname" placeholder="اسم مستعار">
-        <input id="messageInput" placeholder="اكتب رسالة 😊"
-               onkeydown="if(event.key==='Enter')sendMessage()">
-        <button onclick="sendMessage()">إرسال</button>
-    </div>
-</div>
-
-<script>
-// 🔴 ضع بيانات Firebase الخاصة بك
-const firebaseConfig = {
-  apiKey: "API_KEY",
-  authDomain: "PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://PROJECT_ID-default-rtdb.firebaseio.com",
-  projectId: "PROJECT_ID",
-  storageBucket: "PROJECT_ID.appspot.com",
-  messagingSenderId: "SENDER_ID",
-  appId: "APP_ID"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const chatRef = db.ref("chat");
-
-// فتح / غلق الدردشة
-function toggleChat(){
-    const box = document.getElementById("chatBox");
-    box.style.display = box.style.display === "flex" ? "none" : "flex";
-}
-
-// إرسال رسالة
-function sendMessage(){
-    const nick = nickname.value.trim();
-    const msg  = messageInput.value.trim();
-    if(!nick || !msg) return;
-
-    chatRef.push({
-        name:nick,
-        message:msg,
-        time:Date.now()
-    });
-
-    messageInput.value="";
-}
-
-// استقبال الرسائل
-chatRef.limitToLast(100).on("child_added", snap=>{
-    const data = snap.val();
-    const div = document.createElement("div");
-    div.className="chat-message";
-    div.innerHTML = `<span>${data.name}:</span> ${data.message}`;
-    chatMessages.appendChild(div);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-});
-</script>
-
+    <script src="script.js"></script>
 </body>
 </html>
